@@ -18,8 +18,8 @@
  * argon2_verify() correctly verifies value
  */
 
-int dummy_allocate(uint8_t **memory, size_t bytes_to_allocate) { return 0; }
-void dummy_deallocate(uint8_t *memory, size_t bytes_to_allocate) { return; }
+int dummy_allocate(uint8_t **memory, size_t bytes_to_allocate);
+void dummy_deallocate(uint8_t *memory, size_t bytes_to_allocate);
 
 void hashtest(uint32_t version, uint32_t t, uint32_t m, uint32_t p, char *pwd,
               char *salt, char *hexref, char *mcfref) {
@@ -238,9 +238,9 @@ int main() {
 	context.out = out;
 	context.outlen = OUT_LEN;
 	context.pwd = (uint8_t *)(uintptr_t)"password";
-	context.pwdlen = (uint32_t)strlen(context.pwd);
+	context.pwdlen = (uint32_t)strlen("password");
 	context.salt = (uint8_t *)(uintptr_t)"somesalt";
-	context.saltlen = (uint32_t)strlen(context.salt);
+	context.saltlen = (uint32_t)strlen("somesalt");
 	context.secret = NULL;
 	context.secretlen = 0;
 	context.ad = NULL;
@@ -268,7 +268,7 @@ int main() {
 	assert(ret == ARGON2_SALT_PTR_MISMATCH);
 	printf("Fail on salt pointer mismatch: PASS\n");
 	context.salt = "somesalt";
-	context.saltlen = (uint32_t)strlen(context.salt);
+	context.saltlen = (uint32_t)strlen("somesalt");
 
 	/* Incorrect secret pointer */
 	context.secret = NULL;
@@ -321,7 +321,8 @@ int main() {
 	printf("Fail on allocate call back set, but no free callback set: PASS\n");
 	context.free_cbk = NULL;
 
-	Sleep(1000);
-
     return 0;
 }
+
+int dummy_allocate(uint8_t **memory, size_t bytes_to_allocate) { (void)memory; (void)bytes_to_allocate; return 0; }
+void dummy_deallocate(uint8_t *memory, size_t bytes_to_allocate) { (void)memory; (void)bytes_to_allocate; return; }
