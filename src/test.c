@@ -266,7 +266,7 @@ int main() {
 	ret = argon2_ctx(&context, Argon2_i);
 	assert(ret == ARGON2_SALT_PTR_MISMATCH);
 	printf("Fail on salt pointer mismatch: PASS\n");
-	context.salt = "somesalt";
+	context.salt = (uint8_t *)"somesalt";
 	context.saltlen = (uint32_t)strlen("somesalt");
 
 	/* Incorrect secret pointer */
