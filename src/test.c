@@ -57,6 +57,7 @@ int main() {
     unsigned char out[OUT_LEN];
     char const *msg;
     int version;
+	argon2_context context;
 
     version = ARGON2_VERSION_10;
     printf("Test Argon2i version number: %02x\n", version);
@@ -233,9 +234,7 @@ int main() {
 	assert(ret == ARGON2_INCORRECT_PARAMETER);
 	printf("Fail on null context: PASS\n");
 
-	argon2_context context;
-
-	context.out = out;
+	context.out = (uint8_t *)out;
 	context.outlen = OUT_LEN;
 	context.pwd = (uint8_t *)(uintptr_t)"password";
 	context.pwdlen = (uint32_t)strlen("password");
@@ -259,7 +258,7 @@ int main() {
 	ret = argon2_ctx(&context, Argon2_i);
 	assert(ret == ARGON2_OUTPUT_PTR_NULL);
 	printf("Fail on null output pointer: PASS\n");
-	context.out = out;
+	context.out = (uint8_t *)out;
 
 	/* Incorrect salt pointer */
 	context.salt = NULL;
