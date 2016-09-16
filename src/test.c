@@ -18,6 +18,9 @@
  * argon2_verify() correctly verifies value
  */
 
+int dummy_allocate(uint8_t **memory, size_t bytes_to_allocate) { return 0; }
+void dummy_deallocate(uint8_t *memory, size_t bytes_to_allocate) { return; }
+
 void hashtest(uint32_t version, uint32_t t, uint32_t m, uint32_t p, char *pwd,
               char *salt, char *hexref, char *mcfref) {
     unsigned char out[OUT_LEN];
@@ -218,6 +221,107 @@ int main() {
                       out, OUT_LEN, NULL, 0, Argon2_i, version);
     assert(ret == ARGON2_SALT_TOO_SHORT);
     printf("Fail on salt too short: PASS\n");
+
+	/* Invalid Argon type */
+	ret = argon2_hash(2, 16, 1, "password", strlen("password"), "somesalt", strlen("somesalt"),
+		out, OUT_LEN, NULL, ENCODED_LEN, 112233, version);
+	assert(ret == ARGON2_INCORRECT_TYPE);
+	printf("Fail on invalid type: PASS\n");
+
+	/* Context Validation */
+	ret = argon2_ctx(NULL, Argon2_i);
+	assert(ret == ARGON2_INCORRECT_PARAMETER);
+	printf("Fail on null context: PASS\n");
+
+	argon2_context context;
+
+	context.out = out;
+	context.outlen = OUT_LEN;
+	context.pwd = (uint8_t *)(uintptr_t)"password";
+	context.pwdlen = (uint32_t)strlen(context.pwd);
+	context.salt = (uint8_t *)(uintptr_t)"somesalt";
+	context.saltlen = (uint32_t)strlen(context.salt);
+	context.secret = NULL;
+	context.secretlen = 0;
+	context.ad = NULL;
+	context.adlen = 0;
+	context.t_cost = 2;
+	context.m_cost = 16;
+	context.lanes = 1;
+	context.threads = 1;
+	context.allocate_cbk = NULL;
+	context.free_cbk = NULL;
+	context.flags = ARGON2_DEFAULT_FLAGS;
+	context.version = ARGON2_VERSION_NUMBER;
+	
+	/* Null output pointer */
+	context.out = NULL;
+	ret = argon2_ctx(&context, Argon2_i);
+	assert(ret == ARGON2_OUTPUT_PTR_NULL);
+	printf("Fail on null output pointer: PASS\n");
+	context.out = out;
+
+	/* Incorrect salt pointer */
+	context.salt = NULL;
+	context.saltlen = 1;
+	ret = argon2_ctx(&context, Argon2_i);
+	assert(ret == ARGON2_SALT_PTR_MISMATCH);
+	printf("Fail on salt pointer mismatch: PASS\n");
+	context.salt = "somesalt";
+	context.saltlen = (uint32_t)strlen(context.salt);
+
+	/* Incorrect secret pointer */
+	context.secret = NULL;
+	context.secretlen = 1;
+	ret = argon2_ctx(&context, Argon2_i);
+	assert(ret == ARGON2_SECRET_PTR_MISMATCH);
+	printf("Fail on secret pointer mismatch: PASS\n");
+	context.secret = NULL;
+	context.secretlen = 0;
+
+	/* Memory cost too little */
+	context.m_cost = 0;
+	ret = argon2_ctx(&context, Argon2_i);
+	assert(ret == ARGON2_MEMORY_TOO_LITTLE);
+	printf("Fail on memory cost too little: PASS\n");
+	context.m_cost = 16;
+
+	/* Time cost too little */
+	context.t_cost = 0;
+	ret = argon2_ctx(&context, Argon2_i);
+	assert(ret == ARGON2_TIME_TOO_SMALL);
+	printf("Fail on time cost too little: PASS\n");
+	context.t_cost = 2;
+
+	/* Lanes too little */
+	context.lanes = 0;
+	ret = argon2_ctx(&context, Argon2_i);
+	assert(ret == ARGON2_LANES_TOO_FEW);
+	printf("Fail on lanes too little: PASS\n");
+	context.lanes = 1;
+
+	/* Threads too few */
+	context.threads = 0;
+	ret = argon2_ctx(&context, Argon2_i);
+	assert(ret == ARGON2_THREADS_TOO_FEW);
+	printf("Fail on threads too few: PASS\n");
+	context.threads = 1;
+
+	/* Allocate callback not null, with free callback null */
+	context.allocate_cbk = &dummy_allocate;
+	ret = argon2_ctx(&context, Argon2_i);
+	assert(ret == ARGON2_FREE_MEMORY_CBK_NULL);
+	printf("Fail on allocate call back set, but no free callback set: PASS\n");
+	context.allocate_cbk = NULL;
+
+	/* Free callback not null, with allocate callback null */
+	context.free_cbk = &dummy_deallocate;
+	ret = argon2_ctx(&context, Argon2_i);
+	assert(ret == ARGON2_ALLOCATE_MEMORY_CBK_NULL);
+	printf("Fail on allocate call back set, but no free callback set: PASS\n");
+	context.free_cbk = NULL;
+
+	Sleep(1000);
 
     return 0;
 }
